@@ -109,7 +109,10 @@ def student_entrypoint(client_message: ClientMessage):
 	min_chunk_size = client_message.quality_bitrates[0]
 	max_chunk_size = client_message.quality_bitrates[-1]
 	b = client_message.buffer_seconds_until_empty
+	r = 10.0  # reservoir
+	c = 20.0  # cushion
 	fraction = (b - r) / c
+	
 
 	if b <= r: # reservoir pick lowest bitrate
 		return 0
