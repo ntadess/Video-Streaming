@@ -62,7 +62,7 @@ class ClientMessage:
 # Your helper functions, variables, classes here. You may also write initialization routines to be called
 # when this script is first imported and anything else you wish.
 
-
+startup = True
 def student_entrypoint(client_message: ClientMessage):
 	"""
 	Your mission, if you choose to accept it, is to build an algorithm for chunk bitrate selection that provides
@@ -106,14 +106,35 @@ def student_entrypoint(client_message: ClientMessage):
 
 
 	# BBA-1 - smaller res, better quality
+
+	# BBA-2 add a startup phase based off througtput of first chunk
+	global startup # needs to be glbal to work across calls
+
 	min_chunk_size = client_message.quality_bitrates[0]
 	max_chunk_size = client_message.quality_bitrates[-1]
 	b = client_message.buffer_seconds_until_empty
-	r = 10.0  # reservoir
-	c = 20.0  # cushion
+	r = 5.0  # reservoir
+	c = 15.0  # cushion
 	fraction = (b - r) / c
-	
 
+	if startup:
+		if b >= r:
+			startup = False
+		else:
+			throughput = client_message.previous_throughput
+
+			if throughput == 0:
+				return 0
+			
+			for i in reversed(range(client_message.quality_levels)):
+				# find highest quality that is less than throughput so buffer builds
+				chunk = client_message.quality_bitrates[i]
+				download_time = chunk / throughput
+				if download_time <= client_message.buffer_seconds_per_chunk: # download it faster than it takes to watch basically
+					return i
+
+			return 0
+		
 	if b <= r: # reservoir pick lowest bitrate
 		return 0
 	
